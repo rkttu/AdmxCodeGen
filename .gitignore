@@ -396,3 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Project Specific
+src/AdmxCodeGen/outputs/*

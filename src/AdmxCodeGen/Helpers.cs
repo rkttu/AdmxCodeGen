@@ -84,7 +84,7 @@ internal static class Helpers
         return s;
     }
 
-    private static string EscapeNamespace(string? s)
+    internal static string EscapeNamespace(string? s)
     {
         if (s == null)
             return string.Empty;

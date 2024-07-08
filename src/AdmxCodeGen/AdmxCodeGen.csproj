@@ -14,7 +14,7 @@
 	<PropertyGroup>
 		<RootNamespace>AdmxCodeGen</RootNamespace>
 		<Title>AdmxCodeGen</Title>
-		<Version>0.5.1</Version>
+		<Version>0.5.2</Version>
 		<Authors>Jung Hyun, Nam</Authors>
 		<Company>rkttu.com</Company>
 		<Product>AdmxCodeGen</Product>
@@ -34,6 +34,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="outputs\**" />
+		<EmbeddedResource Remove="outputs\**" />
+		<None Remove="outputs\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Remove="generate.cmd" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\..\README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
@@ -44,6 +54,10 @@
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>$(AssemblyName).Tests</_Parameter1>
 		</AssemblyAttribute>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="generate.cmd" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -90,11 +90,11 @@ internal static partial class CodeRenderer
             }
 
             output.Diagnostics = messages.AsReadOnly();
+            output.AssemblyName = assemblyName;
+            output.OutputDirectoryPath = outputDirectoryPath;
 
             if (emitResult.Success)
             {
-                output.AssemblyName = assemblyName;
-                output.OutputDirectoryPath = outputDirectoryPath;
                 output.BuildOutputPath = peFilePath;
                 output.DebugSymbolFilePath = pdbFilePath;
                 output.XmlDocumentFilePath = xmlFilePath;
@@ -177,11 +177,11 @@ internal static partial class CodeRenderer
             }
 
             output.Diagnostics = messages.AsReadOnly();
+            output.AssemblyName = assemblyName;
+            output.OutputDirectoryPath = outputDirectoryPath;
 
             if (emitResult.Success)
             {
-                output.AssemblyName = assemblyName;
-                output.OutputDirectoryPath = outputDirectoryPath;
                 output.BuildOutputPath = peFilePath;
                 output.DebugSymbolFilePath = pdbFilePath;
                 output.XmlDocumentFilePath = xmlFilePath;
@@ -207,7 +207,7 @@ internal static partial class CodeRenderer
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         await writer.WriteLineAsync("#pragma warning disable CS0219, CS8019");
-        await writer.WriteLineAsync($"namespace {assemblyName} {{");
+        await writer.WriteLineAsync($"namespace {Helpers.EscapeNamespace(assemblyName)} {{");
 
         var policyTemplate = Template.Parse(Templates.GetPolicyRenderingTemplate());
         foreach (var eachPolicy in models)
@@ -255,7 +255,7 @@ internal static partial class CodeRenderer
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         await writer.WriteLineAsync("#pragma warning disable CS0219, CS8019");
-        await writer.WriteLineAsync($"namespace {assemblyName} {{");
+        await writer.WriteLineAsync($"namespace {Helpers.EscapeNamespace(assemblyName)} {{");
 
         var policyTemplate = Template.Parse(Templates.GetPolicyRenderingTemplate());
         if (cancellationToken.IsCancellationRequested)
@@ -282,7 +282,6 @@ internal static partial class CodeRenderer
         }.ToTemplateContext()).AsMemory(), cancellationToken: cancellationToken).ConfigureAwait(false);
 
         await writer.WriteLineAsync($"}}");
-
     }
 
     private static SourceText LoadCSharpCode(SourceText sourceText, CancellationToken cancellationToken)
@@ -423,20 +422,14 @@ internal static partial class CodeRenderer
         this AssemblyEmitResult emitResult, CancellationToken cancellationToken = default)
     {
         if (emitResult == null)
-            throw new ArgumentException("Emit result cannot be null reference.", nameof(emitResult));
-        if (!emitResult.BuildSucceed)
-            throw new InvalidOperationException("Cannot generate project file from failed build result.");
-
-        var assemblyName = emitResult.AssemblyName;
-        if (string.IsNullOrWhiteSpace(assemblyName))
-            throw new ArgumentException("Assembly name cannot be null or white space string.", nameof(assemblyName));
+            return;
 
         var outputDirectoryPath = emitResult.OutputDirectoryPath;
         if (!Directory.Exists(outputDirectoryPath))
-            throw new DirectoryNotFoundException($"'{outputDirectoryPath}' is not exists.");
+            Directory.CreateDirectory(outputDirectoryPath);
 
         var targetEncoding = new UTF8Encoding(false);
-        var outputFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}.log");
+        var outputFilePath = Path.Combine(outputDirectoryPath, "buildlog.log");
         await File.WriteAllLinesAsync(outputFilePath, emitResult.Diagnostics, targetEncoding, cancellationToken).ConfigureAwait(false);
     }
 
