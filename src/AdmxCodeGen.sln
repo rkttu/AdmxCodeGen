@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdmxCodeGen", "AdmxCodeGen\AdmxCodeGen.csproj", "{5673CF2A-2DE9-4919-8CF6-36A829F1F99A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A62C3CB3-C16E-4D0D-9715-8AF7E68A3999}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\dotnet.yml = ..\.github\workflows\dotnet.yml
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdmxCodeGen.Tests", "AdmxCodeGen.Tests\AdmxCodeGen.Tests.csproj", "{5F785F2F-BFB5-4741-9BF3-8244B702F0B9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5673CF2A-2DE9-4919-8CF6-36A829F1F99A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5673CF2A-2DE9-4919-8CF6-36A829F1F99A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5673CF2A-2DE9-4919-8CF6-36A829F1F99A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5673CF2A-2DE9-4919-8CF6-36A829F1F99A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F785F2F-BFB5-4741-9BF3-8244B702F0B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F785F2F-BFB5-4741-9BF3-8244B702F0B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F785F2F-BFB5-4741-9BF3-8244B702F0B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F785F2F-BFB5-4741-9BF3-8244B702F0B9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E1F9C504-1AF2-4235-9E86-6252D0DCE0A1}
+	EndGlobalSection
+EndGlobal
