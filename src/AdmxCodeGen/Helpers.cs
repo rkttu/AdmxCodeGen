@@ -59,11 +59,7 @@ internal static class Helpers
     }
 
 	private static bool IsAsciiLetter(char c)
-#if NET8_0_OR_GREATER
-        => char.IsAsciiLetter(c);
-#else
         => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-#endif
 
 	private static string EscapeTypeName(string? s)
     {

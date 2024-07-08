@@ -1,4 +1,5 @@
-﻿using AdmxParser;
+﻿using AdmxCodeGen.Models;
+using AdmxParser;
 using System.CommandLine;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -20,7 +21,7 @@ internal static class Program
         };
 
         var assemblyName = new Argument<string>("assemblyName", description: "Output assembly name");
-        var inputPath = new Argument<DirectoryInfo>("inputPath", description: "Input directory path");
+        var inputPath = new Argument<FileSystemInfo>("inputPath", description: "Input directory path or ADMX file path");
         var outputPath = new Argument<FileInfo>("outputPath", description: "Output file path");
 
         var generateCsproj = new Option<string>("--generate-csproj", description: "Generate SDK style .csproj file");
@@ -44,16 +45,39 @@ internal static class Program
         {
             try
             {
-                await $"Loading ADMX files from '{inputPathValue.FullName}'...".OutWriteLineAsync(cancellationToken).ConfigureAwait(false);
-                var admxDirectory = new AdmxDirectory(inputPathValue.FullName);
+                AssemblyEmitResult? emitResult = default;
 
-                await admxDirectory.LoadAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                if (inputPathValue is DirectoryInfo dirInfo)
+                {
+                    await $"Loading ADMX files from '{inputPathValue.FullName}' directory...".OutWriteLineAsync(cancellationToken).ConfigureAwait(false);
 
-                var emitResult = await admxDirectory.EmitCompiledAssemblyAsync(
-                    assemlbyNameValue,
-                    outputPathValue.FullName,
-                    cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                    var admxDirectory = new AdmxDirectory(inputPathValue.FullName);
+                    await admxDirectory.LoadAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                    emitResult = await admxDirectory.EmitCompiledAssemblyAsync(
+                        assemlbyNameValue,
+                        outputPathValue.FullName,
+                        cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else if (inputPathValue is FileInfo fileInfo)
+                {
+                    await $"Loading '{inputPathValue.FullName}' ADMX file...".OutWriteLineAsync(cancellationToken).ConfigureAwait(false);
+
+                    var admxContent = new AdmxContent(inputPathValue.FullName);
+                    await admxContent.LoadAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                    emitResult = await admxContent.EmitCompiledAssemblyAsync(
+                        assemlbyNameValue,
+                        outputPathValue.FullName,
+                        cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                    throw new InvalidOperationException("Invalid input path.");
+
+                if (emitResult == null)
+                    throw new InvalidOperationException("Failed to load ADMX content.");
 
                 await $"Build {(emitResult.BuildSucceed ? "succeed" : "failed")}.".OutWriteLineAsync(cancellationToken).ConfigureAwait(false);
 

@@ -6,9 +6,10 @@ A conversion tool that converts ADMX and ADML files to C# code
 
 ## Minimum Requirements
 
-- Requires .NET 8.0 (LTS), .NET 6.0 (LTS)
+- Minimum required .NET runtime version: .NET 6.0 (LTS)
+  - If you run this tool on a runtime later than this version, dependencies will be automatically aligned by the roll forward feature.
   - This library does not support ADM files.
-- The generated assemlby and C# code can only run on Windows platforms.
+- The generated assemlby and C# code requires at least .NET 6 and can only run on Windows platforms.
 
 ## How to install
 
@@ -29,7 +30,7 @@ Usage:
 
 Arguments:
   <assemblyName>  Output assembly name
-  <inputPath>     Input directory path
+  <inputPath>     Input directory path or ADMX file path
   <outputPath>    Output file path
 
 Options:
@@ -43,7 +44,13 @@ Options:
 ### Convert ADMX directories into .NET assembly
 
 ```bash
-dotnet run --framework net8.0 -- TestProject "./PolicyDefinitions" "./TestProject" --generate-csproj "MyProject" --generate-linqpad "MyProjectLinq" --generate-buildlog
+admxcodegen TestProject "./PolicyDefinitions" "./TestProject" --generate-csproj "MyProject" --generate-linqpad "MyProjectLinq" --generate-buildlog
+```
+
+### Convert ADMX file into .NET assembly
+
+```bash
+admxcodegen InternetExplorer "./PolicyDefinitions/inetres.admx" "./InternetExplorer" --generate-csproj "MyProject" --generate-linqpad "MyProjectLinq" --generate-buildlog
 ```
 
 ## License

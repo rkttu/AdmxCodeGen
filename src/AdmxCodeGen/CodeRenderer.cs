@@ -1,5 +1,6 @@
 ﻿using AdmxCodeGen.Models;
 using AdmxParser;
+using AdmxParser.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -39,6 +40,93 @@ internal static partial class CodeRenderer
         using (var writer = new StreamWriter(stream, targetEncoding))
         {
             await RenderCSharpCodesAsync(admxDirectory, assemblyName, writer, cancellationToken).ConfigureAwait(false);
+        }
+
+        var sourceText = default(SourceText);
+        using (var stream = File.OpenRead(tempSourceFilePath))
+        {
+            sourceText = LoadCSharpCode(SourceText.From(stream), cancellationToken);
+        }
+
+        var sourceFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}.cs");
+        using (var stream = File.OpenWrite(sourceFilePath))
+        using (var writer = new StreamWriter(stream, targetEncoding))
+        {
+            sourceText.Write(writer, cancellationToken);
+        }
+
+        if (File.Exists(tempSourceFilePath))
+            File.Delete(tempSourceFilePath);
+
+        var peFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}.dll");
+        var pdbFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}.pdb");
+        var xmlFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}.xml");
+
+        using var peStream = File.OpenWrite(peFilePath);
+        {
+            using var pdbStream = File.OpenWrite(pdbFilePath);
+            using var xmlOutputStream = File.OpenWrite(xmlFilePath);
+
+            var compileOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
+            var syntaxTree = CSharpSyntaxTree.ParseText(sourceText, cancellationToken: cancellationToken);
+            var compilation = CSharpCompilation.Create(assemblyName, new[] { syntaxTree, }, executableReferences, compileOptions);
+
+            await $"Compiling '{assemblyName}'...".OutWriteLineAsync(cancellationToken).ConfigureAwait(false);
+            var emitResult = compilation.Emit(peStream, pdbStream: pdbStream, xmlDocumentationStream: xmlOutputStream, cancellationToken: cancellationToken);
+            var failures = emitResult.Diagnostics.Where(x => x.Severity != DiagnosticSeverity.Hidden && x.Severity != DiagnosticSeverity.Info);
+            var messages = new List<string>();
+
+            output.BuildSucceed = emitResult.Success;
+
+            if (failures.Any())
+            {
+                foreach (var diagnostic in failures)
+                {
+                    var lineSpan = diagnostic.Location.GetLineSpan();
+                    var startLine = lineSpan.StartLinePosition.Line;
+                    var lineText = sourceText.Lines[startLine].ToString();
+                    messages.Add($"[ln.{startLine + 1}] {diagnostic.GetMessage()} - {lineText}");
+                }
+            }
+
+            output.Diagnostics = messages.AsReadOnly();
+
+            if (emitResult.Success)
+            {
+                output.AssemblyName = assemblyName;
+                output.OutputDirectoryPath = outputDirectoryPath;
+                output.BuildOutputPath = peFilePath;
+                output.DebugSymbolFilePath = pdbFilePath;
+                output.XmlDocumentFilePath = xmlFilePath;
+            }
+        }
+
+        return output;
+    }
+
+    public static async Task<AssemblyEmitResult> EmitCompiledAssemblyAsync(this AdmxContent admxContent,
+        string? assemblyName,
+        string outputDirectoryPath,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(assemblyName))
+            throw new ArgumentException("Assembly name cannot be null or white space string.", nameof(assemblyName));
+
+        if (!Directory.Exists(outputDirectoryPath))
+            Directory.CreateDirectory(outputDirectoryPath);
+
+        var output = new AssemblyEmitResult();
+        var executableReferences = await PrepareAppReferencesFromOnlineAsync(cancellationToken).ConfigureAwait(false);
+        if (executableReferences.Count < 1)
+            throw new DirectoryNotFoundException("Cannot obtain base directory path of .NET runtime.");
+
+        var targetEncoding = new UTF8Encoding(false);
+        var tempSourceFilePath = Path.Combine(outputDirectoryPath, $"{assemblyName}_temp.cs");
+
+        using (var stream = File.OpenWrite(tempSourceFilePath))
+        using (var writer = new StreamWriter(stream, targetEncoding))
+        {
+            await RenderCSharpCodesAsync(admxContent, assemblyName, writer, cancellationToken).ConfigureAwait(false);
         }
 
         var sourceText = default(SourceText);
@@ -149,6 +237,51 @@ internal static partial class CodeRenderer
         }.ToTemplateContext()).AsMemory(), cancellationToken: cancellationToken).ConfigureAwait(false);
 
         await writer.WriteLineAsync($"}}");
+    }
+
+    private static async Task RenderCSharpCodesAsync(this AdmxContent admxContent, string assemblyName, TextWriter writer, CancellationToken cancellationToken = default)
+    {
+        if (admxContent == null)
+            throw new ArgumentNullException(nameof(admxContent));
+        if (!admxContent.Loaded)
+            throw new ArgumentException("Please load the content model first before rendering.", nameof(admxContent));
+        if (writer == null)
+            throw new ArgumentNullException(nameof(writer));
+
+        var model = admxContent.ParseModel();
+
+        await writer.WriteLineAsync(
+            Templates.GetFileHeaderBanner().AsMemory(),
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await writer.WriteLineAsync("#pragma warning disable CS0219, CS8019");
+        await writer.WriteLineAsync($"namespace {assemblyName} {{");
+
+        var policyTemplate = Template.Parse(Templates.GetPolicyRenderingTemplate());
+        if (cancellationToken.IsCancellationRequested)
+            throw new OperationCanceledException();
+
+        await writer.WriteLineAsync(policyTemplate.Render(model.ToTemplateContext(additionalModel: new
+        {
+            UsingReferences = Templates.GetUsingReferences(),
+        })).AsMemory(), cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        var supplementTemplate = Template.Parse(Templates.GetSupplementRenderingTemplates());
+        await writer.WriteLineAsync(supplementTemplate.Render(new
+        {
+            UsingReferences = Templates.GetUsingReferences(),
+            Body = string.Join(Environment.NewLine, new string[]
+            {
+                Templates.GetBaseModels(),
+                Templates.GetBaseInterfaces(),
+                Templates.GetGroupPolicyObject(),
+                Templates.GetGroupPolicyMethods(),
+                Templates.GetInteropCodes(),
+                Templates.GetHelperCodes(),
+            }),
+        }.ToTemplateContext()).AsMemory(), cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await writer.WriteLineAsync($"}}");
 
     }
 
@@ -193,7 +326,7 @@ internal static partial class CodeRenderer
 			<Project Sdk="Microsoft.NET.Sdk">
 				<PropertyGroup>
 					<OutputType>Exe</OutputType>
-					<TargetFramework>net8.0-windows7.0</TargetFramework>
+					<TargetFramework>net6.0-windows7.0</TargetFramework>
 					<ApplicationManifest>app.manifest</ApplicationManifest>
 				</PropertyGroup>
 				<ItemGroup>
