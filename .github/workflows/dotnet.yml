@@ -11,6 +11,7 @@ on:
     paths:
     - src/**
     - .github/workflows/**
+  workflow_dispatch:
 env:
   DOTNET_NOLOGO: true
 jobs:
