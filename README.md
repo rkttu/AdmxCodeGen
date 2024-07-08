@@ -8,7 +8,7 @@ A conversion tool that converts ADMX and ADML files to C# code
 
 - Requires a platform with .NET Standard 2.0
   - This library does not support ADM files.
-  - Supported .NET Version: .NET Core 2.0+, .NET 5+, .NET Framework 4.6.1+, Mono 5.4+, UWP 10.0.16299+, Unity 2018.1+
+  - Supported .NET Version: .NET 8.0 (LTS), .NET 6.0 (LTS)
 - The generated C# code can only run on Windows platforms.
 
 ## How to use
