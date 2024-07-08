@@ -6,10 +6,15 @@ A conversion tool that converts ADMX and ADML files to C# code
 
 ## Minimum Requirements
 
-- Requires a platform with .NET Standard 2.0
+- Requires .NET 8.0 (LTS), .NET 6.0 (LTS)
   - This library does not support ADM files.
-  - Supported .NET Version: .NET 8.0 (LTS), .NET 6.0 (LTS)
-- The generated C# code can only run on Windows platforms.
+- The generated assemlby and C# code can only run on Windows platforms.
+
+## How to install
+
+1. Install the latest .NET runtime from [https://dot.net/](https://dot.net) first.
+2. Run `dotnet tool install --global AdmxCodeGen` command. (Internet connection required.)
+3. Run `admxcodegen --help` command to validate installation.
 
 ## How to use
 
